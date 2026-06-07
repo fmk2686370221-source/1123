@@ -1,0 +1,19 @@
+# Local/development artifacts
+docs/
+output/
+test-results/
+.playwright-cli/
+tests/
+preview-evidence/
+
+# Render/check screenshots and temporary previews
+generated_contact_sheet.jpg
+rendered_login*.png
+
+# Local notes and non-site materials
+后续开发交接.md
+账号.txt
+
+# OS/editor noise
+Thumbs.db
+.DS_Store
