@@ -1045,6 +1045,8 @@ function renderAffairsRecord(entry) {
 }
 
 function renderFileRecord(entry) {
+  if (entry.type === "forum-print") return renderForumPrintRecord(entry);
+  if (entry.type === "cache-index") return renderCacheIndexRecord(entry);
   const type = fileKind(entry);
   if (entry.media?.kind === "image") {
     return renderEvidenceImage(entry);
@@ -1063,6 +1065,63 @@ function renderFileRecord(entry) {
       <div class="file-paper">
         <div class="record-detail">${escapeHtml(entry.detail)}</div>
       </div>
+    </div>
+  `;
+}
+
+function renderForumPrintRecord(entry) {
+  return `
+    <div class="file-preview pdf forum-print-preview">
+      <div class="file-toolbar">
+        <span>网页打印预览</span>
+        <span class="meta">${escapeHtml(entry.meta || "历史打印缓存")}</span>
+      </div>
+      <div class="forum-print-page">
+        <div class="forum-print-site">
+          <strong>莲都夜话</strong>
+          <span>论坛 / 夜话杂谈 / 缓存打印</span>
+        </div>
+        <h3>【莲都怪谈】招魂残帖</h3>
+        <div class="forum-print-meta">楼主：烟雨　发表于：2024-03-12 21:47　只看楼主　倒序浏览</div>
+        <div class="forum-print-body">
+          <p>听学姐说，档案馆旧书区有一本残了页的《招魂残帖》。</p>
+          <p>她也只看到开头一页，后面都缺了。</p>
+          <p class="ritual-line">冤者未安，可循名暂归。亲近者持旧名、旧物、旧问，只问最后一句。</p>
+          <p class="ritual-line">旧愿得了，方可安心轮回。</p>
+        </div>
+        <div class="torn-corner-note">右下角缺损</div>
+        <div class="margin-note">周叙批注：缺页位置和林栀后来找的后页能对上。</div>
+        <div class="forum-print-footer">缓存时间：${escapeHtml(entry.meta || "2024-04-18 18:32")}　Processed in 0.045678 second(s)</div>
+      </div>
+      <div class="record-detail">${escapeHtml(entry.detail)}</div>
+    </div>
+  `;
+}
+
+function renderCacheIndexRecord(entry) {
+  const rows = entry.detail
+    .split("；")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(1)
+    .map((row) => row.split(",").map((x) => x.trim()));
+  return `
+    <div class="file-preview text">
+      <div class="file-toolbar">
+        <span>CSV预览</span>
+        <span class="meta">旧论坛缓存索引</span>
+      </div>
+      <table class="system-table cache-index-table">
+        <thead><tr><th>title</th><th>url</th><th>first_seen</th><th>last_seen</th></tr></thead>
+        <tbody>${rows.map((row) => `
+          <tr>
+            <td>${escapeHtml(row[0] || "")}</td>
+            <td><code>${escapeHtml(row[1] || "")}</code></td>
+            <td>${escapeHtml(row[2] || "")}</td>
+            <td>${escapeHtml(row[3] || "")}</td>
+          </tr>
+        `).join("")}</tbody>
+      </table>
     </div>
   `;
 }
@@ -1105,6 +1164,9 @@ function renderDamagedVideo(entry) {
 
 function renderBrowserRecord(entry) {
   if (entry.title.includes("统一认证")) return renderSsoCacheRecord(entry);
+  if (entry.type === "browser-history") return renderBrowserHistoryRecord(entry);
+  if (entry.type === "browser-log") return renderBrowserSecurityLog(entry);
+  if (entry.type === "browser-page") return renderBrowserPageRecord(entry);
   const risky = entry.detail.includes("风险") || entry.detail.includes("拦截") || entry.detail.includes("净愿");
   return `
     <div class="browser-frame ${risky ? "risky" : ""}">
@@ -1119,6 +1181,83 @@ function renderBrowserRecord(entry) {
         <div class="record-detail">${escapeHtml(entry.detail)}</div>
         ${entry.meta ? `<div class="record-meta">${escapeHtml(entry.meta)}</div>` : ""}
       </div>
+    </div>
+  `;
+}
+
+function renderBrowserHistoryRecord(entry) {
+  const parts = entry.detail.split(/[；。]/).map((x) => x.trim()).filter(Boolean);
+  const rows = parts
+    .filter((part) => /^\d{4}-\d{2}-\d{2}/.test(part))
+    .map((part) => {
+      const match = part.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+?)\s+(jyg-help\.[^\s]+)$/);
+      return match
+        ? { date: match[1], time: match[2], title: match[3], url: match[4] }
+        : { date: "", time: "", title: part, url: "" };
+    });
+  const device = (parts.find((part) => part.startsWith("设备：")) || "").replace("设备：", "");
+  return `
+    <div class="browser-frame browser-history-frame">
+      <div class="browser-bar"><span></span><span></span><span></span><input value="chrome://history/?q=jyg-help.top" readonly /></div>
+      <div class="browser-warning">浏览器历史记录 / 缓存恢复${device ? `　设备：${escapeHtml(device)}` : ""}</div>
+      <div class="browser-history-list">
+        ${rows.map((row) => `
+          <div class="history-row">
+            <div class="history-time"><strong>${escapeHtml(row.time)}</strong><span>${escapeHtml(row.date)}</span></div>
+            <div class="history-main">
+              <strong>${escapeHtml(row.title)}</strong>
+              <code>${escapeHtml(row.url)}</code>
+            </div>
+            <span class="history-chip">${row.url.includes("#deep") ? "标题缓存" : row.url.includes("/next") ? "页面残留" : "访问记录"}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderBrowserSecurityLog(entry) {
+  const rows = entry.detail.split("；").map((x) => x.trim()).filter(Boolean);
+  return `
+    <div class="browser-frame risky">
+      <div class="browser-bar"><span></span><span></span><span></span><input value="security://blocked-history" readonly /></div>
+      <div class="browser-warning">安全中心拦截记录：脚本已阻断，仅保留标题与来源残留</div>
+      <table class="system-table browser-log-table">
+        <tbody>${rows.map((row) => {
+          const parts = row.split("：");
+          return `<tr><th>${escapeHtml(parts[0] || "记录")}</th><td>${escapeHtml(parts.length > 1 ? parts.slice(1).join("：") : row)}</td></tr>`;
+        }).join("")}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderBrowserPageRecord(entry) {
+  const risky = entry.detail.includes("风险") || entry.detail.includes("饭不用吃") || entry.detail.includes("jyg-help");
+  const isRiskTalk = entry.title.includes("安全话术");
+  const url = isRiskTalk ? "http://jyg-help.top/old/daixuan.html" : "http://jyg-help.top/zh";
+  return `
+    <div class="browser-frame ${risky ? "risky" : ""}">
+      <div class="browser-bar"><span></span><span></span><span></span><input value="${escapeHtml(url)}" readonly /></div>
+      <div class="browser-warning">${risky ? "风险链接，已拦截，保留快照" : "旧论坛页面缓存"}</div>
+      <article class="cached-webpage ${isRiskTalk ? "risk-webpage" : ""}">
+        <div class="cached-site">${isRiskTalk ? "病友互助 / 代愿" : "莲都夜话论坛"}</div>
+        <h3>${escapeHtml(isRiskTalk ? "医院治不好的，不一定是病" : "【莲都怪谈】招魂残帖")}</h3>
+        ${isRiskTalk ? `
+          <p>只是靠近一下，不会有事。</p>
+          <ol>
+            <li>饭不用吃，线不用解，镜子对着你就行。</li>
+            <li>到铃声响再松，不要提前回头。</li>
+          </ol>
+          <small>过紧、卡住或无人看护，风险自负。</small>
+        ` : `
+          <p>冤者未安，可循名暂归。</p>
+          <p>亲近者持旧名、旧物、旧愿，只问最后一句。</p>
+          <p>心愿得了，方可安心轮回。</p>
+        `}
+      </article>
+      <div class="record-detail">${escapeHtml(entry.detail)}</div>
+      ${entry.meta ? `<div class="record-meta">${escapeHtml(entry.meta)}</div>` : ""}
     </div>
   `;
 }
