@@ -101,6 +101,7 @@ function renderLogin() {
 
 function renderApp() {
   const account = state.currentAccount;
+  const recovery = recoveryProgress();
   app.innerHTML = `
     <div class="app-shell">
       <header class="topbar">
@@ -108,6 +109,10 @@ function renderApp() {
         <div class="top-actions">
           <span>历史归档模式</span>
           <span class="top-account-label">${account.name} / ${account.studentId}</span>
+          <div class="top-recovery-meter" aria-label="当前恢复进度">
+            <span>${recovery.percent}%</span>
+            <i><b style="width:${recovery.percent}%"></b></i>
+          </div>
           ${state.stageIndex < stages.length - 1 ? `<button class="secondary-btn top-recover" id="recoverBtn">恢复历史数据</button>` : `<span class="top-complete">数据已恢复</span>`}
           <button class="ghost-btn" id="logoutBtn">退出账号</button>
         </div>
@@ -249,7 +254,14 @@ function renderAccountCard(account) {
   `;
 }
 
+function recoveryProgress() {
+  const restored = Math.min(state.stageIndex + 1, stages.length);
+  const percent = Math.round((restored / stages.length) * 100);
+  return { restored, total: stages.length, percent };
+}
+
 function renderRecoveryPanel() {
+  const recovery = recoveryProgress();
   return `
     <div class="recovery-dock ${state.recoveryOpen ? "open" : ""}">
       <button class="recovery-dock-toggle" id="recoveryDockToggle" type="button">
@@ -261,6 +273,13 @@ function renderRecoveryPanel() {
           <div class="archive-status">
             <div class="meta">当前归档包：${stages[state.stageIndex].title}</div>
             <div class="meta">${stages[state.stageIndex].recoveryText}</div>
+            <div class="recovery-meter">
+              <div>
+                <strong>恢复进度</strong>
+                <span>${recovery.restored}/${recovery.total} 阶段 · 约 ${recovery.percent}%</span>
+              </div>
+              <div class="cache-bar"><span style="width:${recovery.percent}%"></span></div>
+            </div>
           </div>
           <button class="ghost-btn reset-stage-btn" id="resetStageBtn">重置进度</button>
           <div class="hint">仅DM需要时使用。恢复历史数据请点击右上角按钮。</div>
@@ -1190,7 +1209,7 @@ function renderBrowserHistoryRecord(entry) {
   const rows = parts
     .filter((part) => /^\d{4}-\d{2}-\d{2}/.test(part))
     .map((part) => {
-      const match = part.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+?)\s+(jyg-help\.[^\s]+)$/);
+      const match = part.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+?)\s+([a-z][^\s]+)$/i);
       return match
         ? { date: match[1], time: match[2], title: match[3], url: match[4] }
         : { date: "", time: "", title: part, url: "" };
@@ -1208,7 +1227,7 @@ function renderBrowserHistoryRecord(entry) {
               <strong>${escapeHtml(row.title)}</strong>
               <code>${escapeHtml(row.url)}</code>
             </div>
-            <span class="history-chip">${row.url.includes("#deep") ? "标题缓存" : row.url.includes("/next") ? "页面残留" : "访问记录"}</span>
+            <span class="history-chip">${row.url.includes("#deep") ? "标题缓存" : row.url.includes("/next") ? "页面残留" : row.url.includes("search") ? "搜索记录" : "访问记录"}</span>
           </div>
         `).join("")}
       </div>

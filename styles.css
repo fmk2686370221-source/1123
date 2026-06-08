@@ -227,6 +227,32 @@ select {
   font-size: 13px;
 }
 
+.top-recovery-meter {
+  display: grid;
+  grid-template-columns: auto 72px;
+  gap: 7px;
+  align-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.top-recovery-meter i {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
+  overflow: hidden;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.top-recovery-meter b {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b9dcff, #ffffff);
+}
+
 .top-account-label {
   min-width: 170px;
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -1549,6 +1575,33 @@ select {
   margin: 10px 0 12px;
 }
 
+.recovery-meter {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #d5e2f0;
+  border-radius: 6px;
+  background: #f8fbff;
+  padding: 9px;
+}
+
+.recovery-meter > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.recovery-meter strong {
+  color: var(--blue-dark);
+  font-size: 13px;
+}
+
+.recovery-meter span {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .cache-bar {
   height: 9px;
   background: #e8eef6;
@@ -2404,6 +2457,11 @@ select {
   .top-account-label {
     flex: 1 1 190px;
     min-width: 0;
+  }
+
+  .top-recovery-meter {
+    flex: 1 1 140px;
+    grid-template-columns: auto minmax(72px, 1fr);
   }
 
   .top-recover,
